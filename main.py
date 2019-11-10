@@ -33,12 +33,25 @@ def rot_vert(grid):
             [a, b, c]]
 
 
-all_actions = [
-    rot_vert, rot_left, rot_right,
-    # composition of rotate vert -> rotate left
-    lambda grid: rot_left(rot_vert(grid)),
-    lambda grid: rot_right(rot_vert(grid))
+def flip(grid):
+    [[a, b, c],
+     [d, e, f]] = grid
+
+    return [[f, e, d],
+            [c, b, a]]
+
+
+def compose(f, g):
+    return lambda grid: f(g(grid))
+
+
+base_actions = [
+    rot_vert, rot_left, rot_right, flip,
 ]
+
+composed_actions = [compose(f, g) for f in base_actions for g in base_actions]
+
+all_actions = base_actions + composed_actions
 
 
 def is_equiv(grid1, grid2):
@@ -92,6 +105,7 @@ def main():
         else:
             orbits.append([grid])
 
+    print(f'{len(orbits)} orbits total')
     for i, orbit in enumerate(orbits):
         print(f'--------------- orbit {i}: size {len(orbit)} ---------------')
         interpsersed = intersperse(orbit, [[' '], [' ']])
