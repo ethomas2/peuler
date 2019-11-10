@@ -2,11 +2,14 @@ import itertools
 from functools import reduce
 
 
-def all_grids():
+def _all_grids():
     flat_grids = itertools.product(*[range(2) for _ in range(6)])
     for a, b, c, d, e, f in flat_grids:
         yield [[a, b, c],
                [d, e, f]]
+
+
+all_grids = list(_all_grids())
 
 
 def rot_left(grid):
@@ -45,13 +48,47 @@ def compose(f, g):
     return lambda grid: f(g(grid))
 
 
+def identity(x):
+    return x
+
+
+def is_same_action(f, g):
+    return all(f(grid) == g(grid) for grid in all_grids)
+
+
 base_actions = [
-    rot_vert, rot_left, rot_right, flip,
+    identity, rot_vert, rot_left, rot_right, flip,
 ]
 
-composed_actions = [compose(f, g) for f in base_actions for g in base_actions]
+all_actions = base_actions
+while True:
+    added_action = False
+    for act1, act2 in itertools.product(base_actions, all_actions):
+        h = compose(act1, act2)
+        if not any(
+            is_same_action(existing_act, h) for existing_act in all_actions
+        ):
+            all_actions.append(h)
+            added_action = True
+    if not added_action:
+        break
 
-all_actions = base_actions + composed_actions
+
+def assert_is_complete():
+    # assert that the composition of any two actions is already included in the
+    # full action set
+    for f, g in itertools.product(all_actions, all_actions):
+        h = compose(f, g)
+        is_included = any(
+            action
+            for action in all_actions
+            if all(h(grid) == action(grid) for grid in all_grids)
+        )
+        if not is_included:
+            raise Exception(f'Not complete')
+
+
+assert_is_complete()
 
 
 def is_equiv(grid1, grid2):
@@ -92,7 +129,7 @@ def intersperse(iterable, delimiter):
 
 
 def main():
-    all_grids_iter = all_grids()
+    all_grids_iter = iter(all_grids)
     orbits = []
 
     for grid in all_grids_iter:
